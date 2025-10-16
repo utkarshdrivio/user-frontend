@@ -1,0 +1,35 @@
+import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react';
+import FormData from "../../components/Form.jsx";
+
+export default function EditUser() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const { id } = router.query;
+
+  useEffect(() => {
+    if (id) {
+      fetchUser(id);
+    }
+  }, [id]);
+
+  const fetchUser = async (userId) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/users/${userId}`);
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+    }
+  };
+
+  const handleBack = () => {
+    router.push('/');
+  };
+
+  if (!user) return <div>Loading...</div>;
+
+  return <FormData user={user} onBack={handleBack} />;
+}
