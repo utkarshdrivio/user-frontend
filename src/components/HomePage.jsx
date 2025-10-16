@@ -32,8 +32,12 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
+      const searchParams = new URLSearchParams();
+      searchParams.append('page', 1);
+      searchParams.append('limit', 1000);
+      
       const response = await fetch(
-        `http://localhost:3001/api/users?page=${pagination.current}&limit=${pagination.pageSize}`
+        `http://localhost:3001/api/users?${searchParams.toString()}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -75,10 +79,14 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
           );
         }
         
-        setUsers(filteredUsers);
+        const startIndex = (pagination.current - 1) * pagination.pageSize;
+        const endIndex = startIndex + pagination.pageSize;
+        const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+        
+        setUsers(paginatedUsers);
         setPagination((prev) => ({
           ...prev,
-          total: data.totalUsers,
+          total: filteredUsers.length,
         }));
       }
     } catch (error) {
@@ -186,13 +194,15 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
   ];
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div style={{ padding: "10px 20px", minHeight: "100vh" }}>
       <div
         style={{
           marginBottom: "20px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: "10px"
         }}
       >
         <h1>User Data</h1>
@@ -201,34 +211,34 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
         </Button>
       </div>
 
-      <div style={{ marginBottom: "20px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+      <div style={{ marginBottom: "20px", display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
         <Input 
           placeholder="Search Name" 
-          style={{ width: 150 }} 
+          style={{ width: '100%', maxWidth: 150, minWidth: 120 }} 
           value={filters.name}
           onChange={(e) => handleFilterChange('name', e.target.value)}
         />
         <Input 
           placeholder="Search Mobile" 
-          style={{ width: 150 }} 
+          style={{ width: '100%', maxWidth: 150, minWidth: 120 }} 
           value={filters.phone}
           onChange={(e) => handleFilterChange('phone', e.target.value)}
         />
         <Input 
           placeholder="Search Email" 
-          style={{ width: 150 }} 
+          style={{ width: '100%', maxWidth: 150, minWidth: 120 }} 
           value={filters.email}
           onChange={(e) => handleFilterChange('email', e.target.value)}
         />
         <Input 
           placeholder="Search Role" 
-          style={{ width: 150 }} 
+          style={{ width: '100%', maxWidth: 150, minWidth: 120 }} 
           value={filters.role}
           onChange={(e) => handleFilterChange('role', e.target.value)}
         />
         <Select 
           placeholder="Select Department" 
-          style={{ width: 150 }}
+          style={{ width: '100%', maxWidth: 150, minWidth: 120 }}
           value={filters.department || undefined}
           onChange={(value) => handleFilterChange('department', value || '')}
           allowClear
@@ -241,7 +251,7 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
         </Select>
         <Select 
           placeholder="Select Status" 
-          style={{ width: 150 }}
+          style={{ width: '100%', maxWidth: 150, minWidth: 120 }}
           value={filters.status || undefined}
           onChange={(value) => handleFilterChange('status', value || '')}
           allowClear
@@ -251,7 +261,7 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
         </Select>
         <DatePicker 
           placeholder="Select Joining Date" 
-          style={{ width: 150 }}
+          style={{ width: '100%', maxWidth: 150, minWidth: 120 }}
           onChange={(date, dateString) => handleFilterChange('joiningDate', dateString)}
           allowClear
         />
@@ -262,6 +272,7 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
         dataSource={users}
         rowKey="id"
         loading={loading}
+        scroll={{ x: 800 }}
         pagination={{
           ...pagination,
           showSizeChanger: false,
@@ -270,6 +281,7 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
             `${range[0]}-${range[1]} of ${total} users`,
           onChange: (page) =>
             setPagination((prev) => ({ ...prev, current: page })),
+          responsive: true
         }}
       />
     </div>

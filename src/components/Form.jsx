@@ -37,11 +37,19 @@ const FormData = ({ user, onBack }) => {
         department: user.dept_id,
         role: user.role,
         isActive: user.is_active,
-        // joiningDate: dayjs( user.joining_date).format('YYYY-MM-DD') || null,
+        joiningDate: user.joining_date ? dayjs(user.joining_date) : null,
+        availabilityTime:
+          user.availability_start && user.availability_end
+            ? [
+                dayjs(user.availability_start, "HH:mm:ss"),
+                dayjs(user.availability_end, "HH:mm:ss"),
+              ]
+            : null,
         tags: user.tags ? user.tags.split(",") : [],
         resume: user.resume || null,
         rate: user.rating || 0,
         agreement: user.agreement,
+        profileColor: user.profile_color,
       });
     }
   }, [user, form]);
@@ -59,15 +67,7 @@ const FormData = ({ user, onBack }) => {
   };
 
   const onFinish = async (values) => {
-    // Check if resume and profile picture are uploaded
-    if (!values.resume || values.resume.length === 0) {
-      message.error('Please upload a resume (PDF)');
-      return;
-    }
-    if (!values.profilePicture || values.profilePicture.length === 0) {
-      message.error('Please upload a profile picture');
-      return;
-    }
+
 
     const formData = {
       first_name: values.firstName,
@@ -81,8 +81,9 @@ const FormData = ({ user, onBack }) => {
       joining_date: values.joiningDate?.format("YYYY-MM-DD"),
       is_active: values.isActive || false,
       rating: values.rate || 0,
-      profile_color: values.profileColor?.toHexString(),
-      availability_time: values.availabilityTime?.[0]?.format("HH:mm:ss"),
+      profile_color: values.profileColor?.toHexString ? values.profileColor.toHexString() : values.profileColor,
+      availability_start: values.availabilityTime?.[0]?.format("HH:mm:ss"),
+      availability_end: values.availabilityTime?.[1]?.format("HH:mm:ss"),
       tags: values.tags?.join(","),
       agreement: values.agreement || false,
     };
@@ -126,7 +127,7 @@ const FormData = ({ user, onBack }) => {
     if (Array.isArray(e)) {
       return e;
     }
-    return e?.fileList;
+    return e?.fileList || [];
   };
 
   return (
@@ -150,7 +151,7 @@ const FormData = ({ user, onBack }) => {
           labelCol={{ span: 5 }}
           wrapperCol={{ span: 14 }}
           layout="horizontal"
-          style={{ maxWidth: 600 }}
+          style={{ maxWidth: '100%', width: '100%' }}
           onFinish={onFinish}
         >
           <Form.Item
@@ -195,7 +196,8 @@ const FormData = ({ user, onBack }) => {
               { required: true, message: "Mobile number is required" },
               {
                 pattern: /^[6-9]\d{9}$/,
-                message: "Mobile must be exactly 10 digits and starting with 6-9",
+                message:
+                  "Mobile must be exactly 10 digits and starting with 6-9",
               },
             ]}
           >
@@ -214,10 +216,7 @@ const FormData = ({ user, onBack }) => {
               },
             ]}
           >
-            <InputNumber
-              placeholder="Enter age"
-              style={{ width: "100%" }}
-            />
+            <InputNumber placeholder="Enter age" style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item
             label="Department"
@@ -263,7 +262,7 @@ const FormData = ({ user, onBack }) => {
             name="resume"
             valuePropName="fileList"
             getValueFromEvent={normFile}
-            rules={[{ required: true, message: 'Resume is required' }]}
+
           >
             <Upload
               listType="picture-card"
@@ -279,7 +278,7 @@ const FormData = ({ user, onBack }) => {
                 }
                 // Open PDF preview
                 const fileURL = URL.createObjectURL(file);
-                window.open(fileURL, '_blank');
+                window.open(fileURL, "_blank");
                 return false;
               }}
             >
@@ -302,13 +301,15 @@ const FormData = ({ user, onBack }) => {
             name="profilePicture"
             valuePropName="fileList"
             getValueFromEvent={normFile}
-            rules={[{ required: true, message: 'Profile picture is required' }]}
+
           >
             <Upload
               listType="picture-card"
               accept=".png,.jpg,.jpeg"
               beforeUpload={(file) => {
-                if (!['image/png', 'image/jpg', 'image/jpeg'].includes(file.type)) {
+                if (
+                  !["image/png", "image/jpg", "image/jpeg"].includes(file.type)
+                ) {
                   message.error("Only PNG, JPG, JPEG files are allowed");
                   return Upload.LIST_IGNORE;
                 }
