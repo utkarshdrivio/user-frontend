@@ -145,13 +145,13 @@ const FormData = ({ user, onBack }) => {
         </span>
         {onBack && <Button onClick={onBack}>Back to Home</Button>}
       </div>
-      <div className="form">
+      <div className="form" style={{ display: 'flex', justifyContent: 'center' , alignItems: 'center' , flexDirection: 'column' , backgroundColor: '#ffffff' }}>
         <Form
           form={form}
           labelCol={{ span: 5 }}
-          wrapperCol={{ span: 14 }}
+          wrapperCol={{ span: 18 }}
           layout="horizontal"
-          style={{ maxWidth: '100%', width: '100%' }}
+          style={{ maxWidth: 800, width: '100%',  border: '1px solid #f0f0f0', padding: '20px', borderRadius: '8px', backgroundColor: '#fafafa' }}
           onFinish={onFinish}
         >
           <Form.Item
