@@ -56,7 +56,7 @@ const FormData = ({ user, onBack }) => {
 
   const fetchDepartments = async () => {
     try {
-      const response = await fetch("http://localhost:3001/api/departments");
+      const response = await fetch("https://user-backend-vert.vercel.app/api/departments");
       if (response.ok) {
         const data = await response.json();
         setDepartments(data);
@@ -90,8 +90,8 @@ const FormData = ({ user, onBack }) => {
 
     try {
       const url = user
-        ? `http://localhost:3001/api/users/${user.id}`
-        : "http://localhost:3001/api/users";
+        ? `https://user-backend-vert.vercel.app/api/users/${user.id}`
+        : "https://user-backend-vert.vercel.app/api/users";
       const method = user ? "PUT" : "POST";
 
       const response = await fetch(url, {
