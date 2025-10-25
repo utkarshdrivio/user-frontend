@@ -15,7 +15,7 @@ export default function EditUser() {
 
   const fetchUser = async (userId) => {
     try {
-      const response = await fetch(`https://user-backend-vert.vercel.app/api/users/${userId}`);
+      const response = await fetch(`http://localhost:3001/api/users/${userId}`);
       if (response.ok) {
         const userData = await response.json();
         console.log('Fetched user data:', userData);

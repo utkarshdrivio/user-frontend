@@ -32,13 +32,11 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const searchParams = new URLSearchParams();
-      searchParams.append('page', 1);
-      searchParams.append('limit', 1000);
-      
       const response = await fetch(
-        `https://user-backend-vert.vercel.app/api/users?${searchParams.toString()}`
+        `http://localhost:3001/api/users?page=1&limit=1000`
       );
+      console.log("response===>",response);
+      
       if (response.ok) {
         const data = await response.json();
         let filteredUsers = data.users;
@@ -101,7 +99,7 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
   }, []);
   const fetchDepartments = async () => {
     try {
-      const response = await fetch("https://user-backend-vert.vercel.app/api/departments");
+      const response = await fetch("http://localhost:3001/api/departments");
       if (response.ok) {
         const data = await response.json();
         setDepartments(data);
