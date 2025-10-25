@@ -35,7 +35,7 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
       const response = await fetch(
         `http://localhost:3001/api/users?page=1&limit=1000`
       );
-      console.log("response===>",response);
+
       
       if (response.ok) {
         const data = await response.json();
