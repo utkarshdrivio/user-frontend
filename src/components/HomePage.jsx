@@ -6,6 +6,7 @@ import {
   PlusOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
+import { API_ENDPOINTS, buildUrl } from '../config/api';
 
 const HomePage = ({ onCreateUser, onEditUser }) => {
   const [users, setUsers] = useState([]);
@@ -32,59 +33,26 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
-        `http://localhost:3001/api/users?page=1&limit=1000`
-      );
-
+      const params = {
+        page: pagination.current,
+        limit: pagination.pageSize,
+        ...(filters.name && { name: filters.name }),
+        ...(filters.phone && { phone: filters.phone }),
+        ...(filters.email && { email: filters.email }),
+        ...(filters.role && { role: filters.role }),
+        ...(filters.department && { department: filters.department }),
+        ...(filters.status !== '' && { status: filters.status }),
+        ...(filters.joiningDate && { joiningDate: filters.joiningDate })
+      };
+      
+      const response = await fetch(buildUrl(API_ENDPOINTS.USERS.LIST, params));
       
       if (response.ok) {
         const data = await response.json();
-        let filteredUsers = data.users;
-        
-        if (filters.name) {
-          filteredUsers = filteredUsers.filter(user => 
-            `${user.first_name} ${user.last_name}`.toLowerCase().includes(filters.name.toLowerCase())
-          );
-        }
-        if (filters.phone) {
-          filteredUsers = filteredUsers.filter(user => 
-            user.phone?.includes(filters.phone)
-          );
-        }
-        if (filters.email) {
-          filteredUsers = filteredUsers.filter(user => 
-            user.email?.toLowerCase().includes(filters.email.toLowerCase())
-          );
-        }
-        if (filters.role) {
-          filteredUsers = filteredUsers.filter(user => 
-            user.role?.toLowerCase().includes(filters.role.toLowerCase())
-          );
-        }
-        if (filters.department) {
-          filteredUsers = filteredUsers.filter(user => 
-            user.dept_id === parseInt(filters.department)
-          );
-        }
-        if (filters.status !== '') {
-          filteredUsers = filteredUsers.filter(user => 
-            user.is_active === (filters.status === 'true')
-          );
-        }
-        if (filters.joiningDate) {
-          filteredUsers = filteredUsers.filter(user => 
-            user.joining_date?.includes(filters.joiningDate)
-          );
-        }
-        
-        const startIndex = (pagination.current - 1) * pagination.pageSize;
-        const endIndex = startIndex + pagination.pageSize;
-        const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-        
-        setUsers(paginatedUsers);
+        setUsers(data.users);
         setPagination((prev) => ({
           ...prev,
-          total: filteredUsers.length,
+          total: data.totalUsers,
         }));
       }
     } catch (error) {
@@ -99,7 +67,7 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
   }, []);
   const fetchDepartments = async () => {
     try {
-      const response = await fetch("http://localhost:3001/api/departments");
+      const response = await fetch(buildUrl(API_ENDPOINTS.DEPARTMENTS.LIST));
       if (response.ok) {
         const data = await response.json();
         setDepartments(data);
@@ -203,7 +171,7 @@ const HomePage = ({ onCreateUser, onEditUser }) => {
           gap: "10px"
         }}
       >
-        <h1>User Data</h1>
+        <h1 style={{ marginLeft: 10 ,color:"#000000" , fontWeight: "bold" , fontSize: "24px"  }} >User Data</h1>
         <Button type="primary" icon={<PlusOutlined />} onClick={onCreateUser}>
           Create New User
         </Button>

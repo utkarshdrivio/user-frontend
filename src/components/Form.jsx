@@ -17,6 +17,7 @@ import {
   Rate,
   message,
 } from "antd";
+import { API_ENDPOINTS, buildUrl } from '../config/api';
 
 const { RangePicker } = DatePicker;
 const { RangePicker: TimeRangePicker } = TimePicker;
@@ -56,7 +57,7 @@ const FormData = ({ user, onBack }) => {
 
   const fetchDepartments = async () => {
     try {
-      const response = await fetch("http://localhost:3001/api/departments");
+      const response = await fetch(buildUrl(API_ENDPOINTS.DEPARTMENTS.LIST));
       if (response.ok) {
         const data = await response.json();
         setDepartments(data);
@@ -90,8 +91,8 @@ const FormData = ({ user, onBack }) => {
 
     try {
       const url = user
-        ? `http://localhost:3001/api/users/${user.id}`
-        : "http://localhost:3001/api/users";
+        ? buildUrl(API_ENDPOINTS.USERS.UPDATE(user.id))
+        : buildUrl(API_ENDPOINTS.USERS.CREATE);
       const method = user ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -140,7 +141,7 @@ const FormData = ({ user, onBack }) => {
           marginBottom: "20px",
         }}
       >
-        <span style={{ color: "black", fontSize: 40 }}>
+        <span style={{ color: "black", fontSize: 40 , fontWeight: "bold"   }}>
           {user ? "Edit User" : "Create User"}
         </span>
         {onBack && <Button onClick={onBack}>Back to Home</Button>}
