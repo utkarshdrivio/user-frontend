@@ -1,166 +1,122 @@
 import React, { useState, useEffect } from "react";
 import { PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { 
-  Button,
-  Select,
-  Checkbox,
-  Switch,
-  ColorPicker,
-  Upload,
-  DatePicker,
-  TimePicker,
-  Form,
-  Input,
-  InputNumber,
-  Radio,
-  Rate,
-  message,
-} from "antd";
+import { Button, Select, Checkbox, Switch, ColorPicker, Upload, DatePicker, TimePicker, Form, Input, InputNumber, Radio, Rate, message } from "antd";
 import { API_ENDPOINTS, buildUrl } from '../config/api';
 
-const { RangePicker } = DatePicker;
 const { RangePicker: TimeRangePicker } = TimePicker;
-const FormData = ({ user, onBack }) => {
+
+const createFileObj = (path, uid, name) => ({
+  uid, name, status: 'done',
+  url: `http://localhost:3001/${path.replace(/\\/g, '/')}`
+});
+
+const handleFileEvent = (e) => {
+  if (Array.isArray(e)) return e;
+  const fileList = e?.fileList;
+  return fileList?.map(file => {
+    if (file.originFileObj && !file.url) {
+      file.url = URL.createObjectURL(file.originFileObj);
+    }
+    return file;
+  }) || fileList;
+};
+
+const UserForm = ({ user, onBack }) => {
   const [departments, setDepartments] = useState([]);
   const [form] = Form.useForm();
-  // const date = dayjs(user.joining_date);
+
   useEffect(() => {
-    fetchDepartments();
+    fetch(buildUrl(API_ENDPOINTS.DEPARTMENTS.LIST))
+      .then(res => res.ok ? res.json() : [])
+      .then(setDepartments)
+      .catch(console.error);
+
     if (user) {
-      form.setFieldsValue({
-        firstName: user.first_name,
-        lastName: user.last_name,
-        email: user.email,
-        Gender: user.gender,
-        mobile: user.phone,
-        age: user.age,
-        department: user.dept_id,
-        role: user.role,
-        isActive: user.is_active,
+      const formValues = {
+        firstName: user.first_name, lastName: user.last_name, email: user.email,
+        Gender: user.gender, mobile: user.phone, age: user.age,
+        department: user.dept_id, role: user.role, isActive: user.is_active,
         joiningDate: user.joining_date ? dayjs(user.joining_date) : null,
-        availabilityTime:
-          user.availability_start && user.availability_end
-            ? [
-                dayjs(user.availability_start, "HH:mm:ss"),
-                dayjs(user.availability_end, "HH:mm:ss"),
-              ]
-            : null,
-        tags: user.tags ? user.tags.split(",") : [],
-        resume: user.resume || null,
+        availabilityTime: user.availability_start && user.availability_end
+          ? [dayjs(user.availability_start, "HH:mm:ss"), dayjs(user.availability_end, "HH:mm:ss")]
+          : null,
+        tags: user.tags?.split(",") || [],
         rate: user.rating || 0,
         agreement: user.agreement,
         profileColor: user.profile_color,
-      });
+      };
+      
+      if (user.resume) formValues.resume = [createFileObj(user.resume, '-1', 'resume.pdf')];
+      if (user.profile_picture) formValues.profilePicture = [createFileObj(user.profile_picture, '-2', 'profile.jpg')];
+      
+      form.setFieldsValue(formValues);
     }
   }, [user, form]);
 
-  const fetchDepartments = async () => {
-    try {
-      const response = await fetch(buildUrl(API_ENDPOINTS.DEPARTMENTS.LIST));
-      if (response.ok) {
-        const data = await response.json();
-        setDepartments(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch departments:", error);
-    }
-  };
-
   const onFinish = async (values) => {
-
-
-    const formData = {
-      first_name: values.firstName,
-      last_name: values.lastName,
-      email: values.email,
-      phone: values.mobile,
-      age: values.age,
-      gender: values.Gender?.toLowerCase(),
-      dept_id: values.department,
-      role: values.role,
+    if (typeof window === 'undefined') return;
+    
+    const formData = new FormData();
+    const fieldMap = {
+      first_name: values.firstName, last_name: values.lastName, email: values.email,
+      phone: values.mobile, age: values.age, gender: values.Gender?.toLowerCase(),
+      dept_id: values.department, role: values.role,
       joining_date: values.joiningDate?.format("YYYY-MM-DD"),
-      is_active: values.isActive || false,
-      rating: values.rate || 0,
-      profile_color: values.profileColor?.toHexString ? values.profileColor.toHexString() : values.profileColor,
+      is_active: values.isActive || false, rating: values.rate || 0,
+      profile_color: values.profileColor?.toHexString?.() || values.profileColor,
       availability_start: values.availabilityTime?.[0]?.format("HH:mm:ss"),
       availability_end: values.availabilityTime?.[1]?.format("HH:mm:ss"),
-      tags: values.tags?.join(","),
-      agreement: values.agreement || false,
+      tags: values.tags?.join(","), agreement: values.agreement || false
     };
+    
+    Object.entries(fieldMap).forEach(([key, value]) => {
+      if (value !== undefined) formData.append(key, value);
+    });
+    
+    if (values.resume?.[0]?.originFileObj) formData.append('resume', values.resume[0].originFileObj);
+    if (values.profilePicture?.[0]?.originFileObj) formData.append('profilePicture', values.profilePicture[0].originFileObj);
 
     try {
-      const url = user
-        ? buildUrl(API_ENDPOINTS.USERS.UPDATE(user.id))
-        : buildUrl(API_ENDPOINTS.USERS.CREATE);
-      const method = user ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      const url = user ? buildUrl(API_ENDPOINTS.USERS.UPDATE(user.id)) : buildUrl(API_ENDPOINTS.USERS.CREATE);
+      const response = await fetch(url, { method: user ? "PUT" : "POST", body: formData });
 
       if (response.ok) {
-        message.success(
-          user ? "User updated successfully!" : "User created successfully!"
-        );
+        message.success(user ? "User updated successfully!" : "User created successfully!");
         form.resetFields();
-        onBack && onBack();
+        onBack?.();
       } else {
         const errorData = await response.json();
-        message.error(
-          `${user ? "Failed to update user" : "Failed to create user"}: ${
-            errorData.error || "Unknown error"
-          }`
-        );
+        message.error(`${user ? "Failed to update" : "Failed to create"} user: ${errorData.error || "Unknown error"}`);
       }
     } catch (error) {
-      message.error(
-        `${user ? "Failed to update user" : "Failed to create user"}: ${
-          error.message
-        }`
-      );
+      message.error(`${user ? "Failed to update" : "Failed to create"} user: ${error.message}`);
     }
-  };
-
-  const normFile = (e) => {
-    if (Array.isArray(e)) {
-      return e;
-    }
-    return e?.fileList || [];
   };
 
   return (
-    <>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-        }}
-      >
-        <span style={{ color: "black", fontSize: 40 , fontWeight: "bold"   }}>
-          {user ? "Edit User" : "Create User"}
-        </span>
-        {onBack && <Button onClick={onBack}>Back to Home</Button>}
-      </div>
-      <div className="form" style={{ display: 'flex', justifyContent: 'center' , alignItems: 'center' , flexDirection: 'column' , backgroundColor: '#ffffff' }}>
-        <Form
-          form={form}
-          labelCol={{ span: 5 }}
-          wrapperCol={{ span: 18 }}
-          layout="horizontal"
-          style={{ maxWidth: 800, width: '100%',  border: '1px solid #f0f0f0', padding: '20px', borderRadius: '8px', backgroundColor: '#fafafa' }}
-          onFinish={onFinish}
-        >
+    <div style={{ minHeight: '100vh', background: '#f8f9fa', padding: '10px' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', paddingTop: '10px' }}>
+        <div style={{ background: 'white', borderRadius: '20px', boxShadow: '0 25px 50px rgba(0,0,0,0.15)', overflow: 'hidden', border: '1px solid #f0f0f0' }}>
+          <div style={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)', borderBottom: '1px solid #e9ecef', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ color: '#2c3e50', margin: 0, fontSize: '22px', fontWeight: '600' }}>{user ? 'Edit User' : 'Create User'}</h2>
+            {onBack && <Button onClick={onBack} style={{ borderRadius: '8px', height: '38px', fontWeight: '500' }}>Back to Home</Button>}
+          </div>
+          <Form
+            form={form}
+            labelCol={{ span: 5, style: { textAlign: 'right', paddingRight: '16px' } }}
+            wrapperCol={{ span: 18 }}
+            layout="horizontal"
+            style={{ padding: '20px', maxWidth: 'none' }}
+            onFinish={onFinish}
+          >
           <Form.Item
             label="First Name"
             name="firstName"
             rules={[{ required: true, message: "First name is required" }]}
+            style={{ marginBottom: '16px' }}
           >
-            <Input placeholder="First Name" />
+            <Input placeholder="First Name" style={{ borderRadius: '6px', height: '40px' }} />
           </Form.Item>
           <Form.Item
             label="Last Name"
@@ -258,83 +214,33 @@ const FormData = ({ user, onBack }) => {
           <Form.Item label="Is Active" name="isActive" valuePropName="checked">
             <Switch />
           </Form.Item>
-          <Form.Item
-            label="Resume"
-            name="resume"
-            valuePropName="fileList"
-            getValueFromEvent={normFile}
-
-          >
-            <Upload
-              listType="picture-card"
-              accept=".pdf"
-              beforeUpload={(file) => {
-                if (file.type !== "application/pdf") {
-                  message.error("Only PDF files are allowed");
-                  return Upload.LIST_IGNORE;
-                }
-                if (file.size > 5 * 1024 * 1024) {
-                  message.error("PDF file must be smaller than 5MB");
-                  return Upload.LIST_IGNORE;
-                }
-                // Open PDF preview
-                const fileURL = URL.createObjectURL(file);
-                window.open(fileURL, "_blank");
-                return false;
-              }}
-            >
-              <button
-                style={{
-                  color: "inherit",
-                  cursor: "inherit",
-                  border: 0,
-                  background: "none",
-                }}
-                type="button"
-              >
-                <PlusOutlined />
-                <div style={{ marginTop: 8 }}>Upload</div>
-              </button>
-            </Upload>
+          <Form.Item label="Files">
+            <div style={{ display: 'flex', gap: '20px' }}>
+              <div style={{ flex: 1 }}>
+                <Form.Item name="resume" valuePropName="fileList" getValueFromEvent={handleFileEvent} style={{ marginBottom: 0 }}>
+                  <Upload
+                    listType="picture-card" accept=".pdf" beforeUpload={() => false} maxCount={1}
+                    showUploadList={{ showPreviewIcon: true, showRemoveIcon: true }}
+                    onPreview={(file) => window.open(file.url || URL.createObjectURL(file.originFileObj || file), '_blank')}
+                  >
+                    <div><PlusOutlined /><div style={{ marginTop: 8 }}>Resume</div></div>
+                  </Upload>
+                </Form.Item>
+              </div>
+              <div style={{ flex: 1 }}>
+                <Form.Item name="profilePicture" valuePropName="fileList" getValueFromEvent={handleFileEvent} style={{ marginBottom: 0 }}>
+                  <Upload
+                    listType="picture-card" accept=".png,.jpg,.jpeg" beforeUpload={() => false} maxCount={1}
+                    showUploadList={{ showPreviewIcon: true, showRemoveIcon: true }}
+                    onPreview={(file) => window.open(file.url || URL.createObjectURL(file.originFileObj || file), '_blank')}
+                  >
+                    <div><PlusOutlined /><div style={{ marginTop: 8 }}>Profile Picture</div></div>
+                  </Upload>
+                </Form.Item>
+              </div>
+            </div>
           </Form.Item>
-          <Form.Item
-            label="Profile Picture"
-            name="profilePicture"
-            valuePropName="fileList"
-            getValueFromEvent={normFile}
 
-          >
-            <Upload
-              listType="picture-card"
-              accept=".png,.jpg,.jpeg"
-              beforeUpload={(file) => {
-                if (
-                  !["image/png", "image/jpg", "image/jpeg"].includes(file.type)
-                ) {
-                  message.error("Only PNG, JPG, JPEG files are allowed");
-                  return Upload.LIST_IGNORE;
-                }
-                if (file.size > 2 * 1024 * 1024) {
-                  message.error("Image file must be smaller than 2MB");
-                  return Upload.LIST_IGNORE;
-                }
-                return false;
-              }}
-            >
-              <button
-                style={{
-                  color: "inherit",
-                  cursor: "inherit",
-                  border: 0,
-                  background: "none",
-                }}
-                type="button"
-              >
-                <PlusOutlined />
-                <div style={{ marginTop: 8 }}>Upload</div>
-              </button>
-            </Upload>
-          </Form.Item>
           <Form.Item label="Tags" name="tags">
             <Select mode="tags" placeholder="Enter tags" />
           </Form.Item>
@@ -351,15 +257,16 @@ const FormData = ({ user, onBack }) => {
           >
             <Checkbox>I have read the agreement</Checkbox>
           </Form.Item>
-          <Form.Item label="Submit form">
-            <Button type="primary" htmlType="submit">
-              Submit
-            </Button>
-          </Form.Item>
         </Form>
+        <div style={{ borderTop: '1px solid #e9ecef', padding: '10px 20px', textAlign: 'right' }}>
+          <Button htmlType="submit" form={form.getFieldsValue ? undefined : 'user-form'} onClick={() => form.submit()} style={{ borderRadius: '8px', height: '38px', fontWeight: '500' }}>
+            {user ? 'Update User' : 'Create User'}
+          </Button>
+        </div>
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 
-export default FormData;
+export default UserForm;

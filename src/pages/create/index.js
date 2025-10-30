@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 
-const FormData = dynamic(() => import("../../components/Form.jsx"), {
+const UserForm = dynamic(() => import("../../components/Form.jsx"), {
   ssr: false,
   loading: () => <div>Loading...</div>
 });
@@ -13,5 +13,5 @@ export default function CreateUser() {
     router.replace('/');
   };
 
-  return <FormData onBack={handleBack} />;
+  return <UserForm onBack={handleBack} />;
 }

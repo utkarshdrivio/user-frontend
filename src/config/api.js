@@ -5,20 +5,15 @@ export const API_ENDPOINTS = {
     LIST: '/api/users',
     CREATE: '/api/users',
     GET_BY_ID: (id) => `/api/users/${id}`,
-    UPDATE: (id) => `/api/users/${id}`,
-    DELETE: (id) => `/api/users/${id}`
+    UPDATE: (id) => `/api/users/${id}`
   },
-  DEPARTMENTS: {
-    LIST: '/api/departments'
-  }
+  DEPARTMENTS: { LIST: '/api/departments' }
 };
 
 export const buildUrl = (endpoint, params = {}) => {
   const url = new URL(API_BASE_URL + endpoint);
-  Object.keys(params).forEach(key => {
-    if (params[key] !== undefined && params[key] !== '') {
-      url.searchParams.append(key, params[key]);
-    }
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') url.searchParams.append(key, value);
   });
   return url.toString();
 };

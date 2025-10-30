@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
-import FormData from "../../components/Form.jsx";
+import UserForm from "../../components/Form.jsx";
 
 export default function EditUser() {
   const router = useRouter();
@@ -34,5 +34,5 @@ export default function EditUser() {
 
   if (!user) return <div>Loading...</div>;
 
-  return <FormData user={user} onBack={handleBack} />;
+  return <UserForm user={user} onBack={handleBack} />;
 }
